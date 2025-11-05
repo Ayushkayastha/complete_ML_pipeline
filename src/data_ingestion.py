@@ -65,7 +65,7 @@ def main():
        calorie_data_url='https://raw.githubusercontent.com/Ayushkayastha/calorie_burn_dataset/refs/heads/main/calories.csv'
        exercise_data_url='https://raw.githubusercontent.com/Ayushkayastha/calorie_burn_dataset/refs/heads/main/exercise.csv'
        df= load_data(calorie_data_url=calorie_data_url,exercise_data_url=exercise_data_url)
-       train_data, test_data = train_test_split(df, test_size=0.2, random_state=42)
+       train_data, test_data = train_test_split(df, test_size=0.21, random_state=42)
        save_data(train_data, test_data, data_path='./data')
 
 
