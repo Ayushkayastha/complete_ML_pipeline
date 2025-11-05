@@ -1,3 +1,7 @@
+#as we dont want these files to be tracked
+data
+logs
+reports
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
