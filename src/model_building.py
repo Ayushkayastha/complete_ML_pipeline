@@ -5,6 +5,7 @@ import pickle
 import logging
 from xgboost import XGBRegressor
 from sklearn.preprocessing import StandardScaler
+import yaml
 
 #making file for logs to be stored
 log_dir='logs'
@@ -32,6 +33,22 @@ file_handler.setFormatter(formater)
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
+def load_params(params_path: str) -> dict:
+    """Load parameters from a YAML file."""
+    try:
+        with open(params_path, 'r') as file:
+            params = yaml.safe_load(file)#converts yaml content to dictionary
+        logger.debug('Parameters retrieved from %s', params_path)
+        return params
+    except FileNotFoundError:
+        logger.error('File not found: %s', params_path)
+        raise
+    except yaml.YAMLError as e:
+        logger.error('YAML error: %s', e)
+        raise
+    except Exception as e:
+        logger.error('Unexpected error: %s', e)
+        raise
 
 def load_data(file_path: str) -> pd.DataFrame:
     """Load data from a CSV file."""
@@ -81,15 +98,21 @@ def save_model(model:XGBRegressor,path:str)->None:
 
 def main():
     try:
+        params=load_params(params_path='params.yaml')
+        colsample_bytree=params['model_building']['colsample_bytree']
+        learning_rate=params['model_building']['learning_rate']
+        max_depth=params['model_building']['max_depth']
+        n_estimators=params['model_building']['n_estimators']
+        subsample=params['model_building']['subsample']
         training_data=load_data(file_path='./data/processed/train_processed.csv')
         X_train = training_data.iloc[:, :-1].values
         y_train = training_data.iloc[:, -1].values
         params={
-            'colsample_bytree': 0.8, 
-            'learning_rate': 0.1, 
-            'max_depth': 6, 
-            'n_estimators': 95, 
-            'subsample': 0.8
+            'colsample_bytree': colsample_bytree, 
+            'learning_rate': learning_rate, 
+            'max_depth': max_depth, 
+            'n_estimators': n_estimators, 
+            'subsample': subsample
             }
         trained_model=train_model(X_train=X_train,y_train=y_train,params=params)
         model_path='models/model.pkl'

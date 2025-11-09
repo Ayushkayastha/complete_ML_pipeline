@@ -2,7 +2,7 @@ import os
 import logging
 import pandas as pd
 from sklearn.model_selection import train_test_split
-
+import yaml
 
 #making file for logs to be stored
 log_dir='logs'
@@ -29,6 +29,23 @@ file_handler.setFormatter(formater)
 # adding 2 handlers we created to logger obj
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
+
+def load_params(params_path: str) -> dict:
+    """Load parameters from a YAML file."""
+    try:
+        with open(params_path, 'r') as file:
+            params = yaml.safe_load(file)#converts yaml content to dictionary
+        logger.debug('Parameters retrieved from %s', params_path)
+        return params
+    except FileNotFoundError:
+        logger.error('File not found: %s', params_path)
+        raise
+    except yaml.YAMLError as e:
+        logger.error('YAML error: %s', e)
+        raise
+    except Exception as e:
+        logger.error('Unexpected error: %s', e)
+        raise
 
 def load_data(calorie_data_url: str,exercise_data_url: str) -> pd.DataFrame:
     try:
@@ -62,10 +79,12 @@ def save_data(train_data:pd.DataFrame,test_data:pd.DataFrame,data_path:str)->Non
 
 def main():
     try:
+       params=load_params(params_path='params.yaml')
+       test_size=params['data_ingestion']['test_size']
        calorie_data_url='https://raw.githubusercontent.com/Ayushkayastha/calorie_burn_dataset/refs/heads/main/calories.csv'
        exercise_data_url='https://raw.githubusercontent.com/Ayushkayastha/calorie_burn_dataset/refs/heads/main/exercise.csv'
        df= load_data(calorie_data_url=calorie_data_url,exercise_data_url=exercise_data_url)
-       train_data, test_data = train_test_split(df, test_size=0.21, random_state=42)
+       train_data, test_data = train_test_split(df, test_size=test_size, random_state=42)
        save_data(train_data, test_data, data_path='./data')
 
 

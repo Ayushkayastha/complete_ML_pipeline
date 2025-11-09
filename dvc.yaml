@@ -3,6 +3,8 @@ stages:
     cmd: python src/data_ingestion.py
     deps:
     - src/data_ingestion.py
+    params:
+    - data_ingestion.test_size
     outs:
     - data/raw
   data_preprocessing:
@@ -17,6 +19,12 @@ stages:
     deps:
     - data/processed
     - src/model_building.py
+    params:
+    - model_building.colsample_bytree
+    - model_building.learning_rate
+    - model_building.max_depth
+    - model_building.n_estimators
+    - model_building.subsample
     outs:
     - models/model.pkl
   model_evaluation:
@@ -25,5 +33,4 @@ stages:
     - models/model.pkl
     - src/model_evaluation.py
     metrics:
-    - reports/metrics.json:
-        cache: false
+    - reports/metrics.json
