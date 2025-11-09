@@ -7,7 +7,8 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import logging
 import yaml
 from sklearn.preprocessing import StandardScaler
-
+import yaml
+from dvclive import Live
 
 # Ensure the "logs" directory exists
 log_dir = 'logs'
@@ -30,6 +31,24 @@ file_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
+
+
+def load_params(params_path: str) -> dict:
+    """Load parameters from a YAML file."""
+    try:
+        with open(params_path, 'r') as file:
+            params = yaml.safe_load(file)#converts yaml content to dictionary
+        logger.debug('Parameters retrieved from %s', params_path)
+        return params
+    except FileNotFoundError:
+        logger.error('File not found: %s', params_path)
+        raise
+    except yaml.YAMLError as e:
+        logger.error('YAML error: %s', e)
+        raise
+    except Exception as e:
+        logger.error('Unexpected error: %s', e)
+        raise
 
 def load_model(file_path: str):
     """Load the trained model from a file."""
@@ -58,7 +77,7 @@ def load_data(file_path: str) -> pd.DataFrame:
         logger.error('Unexpected error occurred while loading the data: %s', e)
         raise
 
-def evaluate_model(model, X_test: np.ndarray, y_test: np.ndarray) -> dict:
+def evaluate_model(model, X_test: np.ndarray, y_test: np.ndarray,params) -> dict:
     """Evaluate the model and return the evaluation metrics."""
     try:
         y_pred = model.predict(X_test)
@@ -76,6 +95,16 @@ def evaluate_model(model, X_test: np.ndarray, y_test: np.ndarray) -> dict:
         }
 
         logger.debug('Model evaluation metrics calculated')
+               #experiment tracting using dvc live each exp ko params ra result save garhca
+        with Live(save_dvc_exp=True) as live:
+          live.log_metric('MSE', mse,)
+          live.log_metric('RMSE', rmse)
+          live.log_metric('MAE', mae)
+          live.log_metric('R2', r2)
+
+          live.log_params(params)
+        logger.debug('parameters and metrics logged using dvc log')
+
         return metrics_dict
     except Exception as e:
         logger.error('Error during model evaluation: %s', e)
@@ -96,13 +125,15 @@ def save_metrics(metrics: dict, file_path: str) -> None:
 
 def main():
     try:
+        params=load_params(params_path='params.yaml')
         model = load_model('./models/model.pkl')
         test_data = load_data('./data/processed/test_processed.csv')
  
         X_test = test_data.iloc[:, :-1].values
         y_test = test_data.iloc[:, -1].values
 
-        metrics = evaluate_model(model, X_test, y_test)
+        metrics = evaluate_model(model, X_test, y_test,params=params)
+          
         save_metrics(metrics, 'reports/metrics.json')
 
     except Exception as e:
